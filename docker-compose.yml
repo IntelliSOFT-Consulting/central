@@ -1,7 +1,7 @@
-version: "3"
+version: '3'
 services:
   postgres:
-    image: "postgres:9.6"
+    image: 'postgres:9.6'
     volumes:
       - /var/lib/postgresql/data
     environment:
@@ -10,7 +10,7 @@ services:
       POSTGRES_DATABASE: odk
     restart: always
   mail:
-    image: "itsissa/namshi-smtp:4.92-8.deb10u6"
+    image: 'itsissa/namshi-smtp:4.92-8.deb10u6'
     volumes:
       - ./files/dkim/config:/etc/exim4/_docker_additional_macros:ro
       - ./files/dkim/rsa.private:/etc/exim4/domain.key:ro
@@ -32,9 +32,10 @@ services:
       - /data/transfer:/data/transfer
     environment:
       - DOMAIN=${DOMAIN}
+      - REPORTS_DOMAIN=${REPORTS_DOMAIN}
       - HTTPS_PORT=${HTTPS_PORT:-443}
       - SYSADMIN_EMAIL=${SYSADMIN_EMAIL}
-    command: [ "./wait-for-it.sh", "postgres:5432", "--", "./start-odk.sh" ]
+    command: ['./wait-for-it.sh', 'postgres:5432', '--', './start-odk.sh']
     restart: always
     logging:
       driver: local
@@ -48,17 +49,18 @@ services:
     environment:
       - SSL_TYPE=${SSL_TYPE:-letsencrypt}
       - DOMAIN=${DOMAIN}
+      - REPORTS_DOMAIN= ${REPORTS_DOMAIN}
       - CERTBOT_EMAIL=${SYSADMIN_EMAIL}
     ports:
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
     healthcheck:
-      test: [ "CMD-SHELL", "nc -z localhost 80 || exit 1" ]
+      test: ['CMD-SHELL', 'nc -z localhost 80 || exit 1']
     restart: always
     logging:
       driver: local
       options:
-        max-file: "30"
+        max-file: '30'
   pyxform:
     image: 'ghcr.io/getodk/pyxform-http:v1.10.1.1'
     restart: always
@@ -82,6 +84,7 @@ services:
       - enketo_redis_cache
     environment:
       - DOMAIN=${DOMAIN}
+      - REPORTS_DOMAIN= ${REPORTS_DOMAIN}
       - SUPPORT_EMAIL=${SYSADMIN_EMAIL}
       - HTTPS_PORT=${HTTPS_PORT:-443}
   enketo_redis_main:
@@ -102,6 +105,41 @@ services:
       - redis-server
       - /usr/local/etc/redis/redis.conf
     restart: always
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    command: ['--auth']
+    volumes:
+      - ./mongo_data:/data/db
+    env_file: ./reports/server/.env
+    restart: always
+
+  reports-server:
+    build: 
+      context: reports/server
+      dockerfile: Dockerfile
+    container_name: reports-server
+    restart: always
+    depends_on:
+      - mongo
+    links:
+      - mongo
+    env_file: ./reports/server/.env
+    ports:
+      - '8080:8080'
+  pmi-frontend:
+    stdin_open: true
+    restart: unless-stopped
+    container_name: pmi-frontend
+    build:
+      dockerfile: Dockerfile
+      context: reports/client
+    depends_on:
+      - reports-server
+    ports:
+      - '8000:8000'
+
 volumes:
   transfer:
   enketo_redis_main:

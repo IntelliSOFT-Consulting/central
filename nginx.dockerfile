@@ -20,7 +20,12 @@ COPY files/nginx/odk-setup.sh /scripts/
 
 COPY files/local/customssl/*.pem /etc/customssl/live/local/
 
+RUN mkdir /etc/nginx/certs
+COPY files/nginx/certs /etc/nginx/certs
+
 COPY files/nginx/default /etc/nginx/sites-enabled/
+COPY files/nginx/reports.conf /etc/nginx/sites-available/
+RUN  ln -s /etc/nginx/sites-available/reports.conf /etc/nginx/sites-enabled/reports.conf
 COPY files/nginx/inflate_body.lua /usr/share/nginx/
 COPY files/nginx/odk.conf.template /usr/share/nginx/
 COPY files/nginx/certbot.conf /usr/share/nginx/
