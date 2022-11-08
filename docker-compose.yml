@@ -46,6 +46,7 @@ services:
     depends_on:
       - service
       - enketo
+      - pmi-frontend
     environment:
       - SSL_TYPE=${SSL_TYPE:-letsencrypt}
       - DOMAIN=${DOMAIN}
