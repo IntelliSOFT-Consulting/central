@@ -112,7 +112,7 @@ services:
     container_name: mongo
     command: ['--auth']
     volumes:
-      - ./mongo_data:/data/db
+      - /var/lib/mongodb/mongo_data:/data/db
     env_file: ./reports/server/.env
     restart: always
 
